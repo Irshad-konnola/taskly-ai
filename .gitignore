@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment Variables (NEVER commit secrets)
+.env
+.env.*
+!.env.example
+
+# Next.js Build Output
+.next/
+out/
+build/
+
+# Backend/Shared Build Output
+dist/
+
+# OS Files
+.DS_Store
+Thumbs.db

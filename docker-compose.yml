@@ -1,0 +1,27 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: taskly_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: taskly_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - taskly_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: taskly_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - taskly_redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  taskly_pg_data:
+  taskly_redis_data:
