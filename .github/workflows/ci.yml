@@ -1,0 +1,50 @@
+name: CI Pipeline
+
+# 1. When should this robot run?
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# 2. What should the robot do?
+jobs:
+  build-and-test:
+    name: Lint, Typecheck, and Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step A: Download our code from GitHub
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step B: Install pnpm
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      # Step C: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      # Step D: Install all our dependencies
+      - name: Install dependencies
+        run: pnpm install
+
+      # Step E: Build the shared library first (so apps can use it)
+      - name: Build Shared Package
+        run: pnpm --filter @taskly/shared build
+
+      # Step F: Check for TypeScript errors in the whole project
+      - name: Typecheck
+        run: |
+          pnpm --filter web exec tsc --noEmit
+          pnpm --filter api exec tsc --noEmit
+
+      # Step G: Make sure the Next.js frontend actually builds successfully
+      - name: Build Frontend
+        run: pnpm --filter web build
