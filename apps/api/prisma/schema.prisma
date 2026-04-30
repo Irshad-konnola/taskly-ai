@@ -1,0 +1,120 @@
+// This block tells Prisma to generate TypeScript code
+generator client {
+  provider = "prisma-client"
+    output   = "../src/generated/prisma"
+
+}
+
+// This block connects to your Postgres Docker container
+datasource db {
+  provider = "postgresql"
+}
+
+// --- ENUMS ---
+// Defines strict roles for project members
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// --- MODELS ---
+
+model User {
+  id               String    @id @default(uuid())
+  email            String    @unique
+  name             String
+  passwordHash     String?   // Optional because of Google OAuth
+  avatar           String?
+  emailVerified    Boolean   @default(false)
+  twoFactorEnabled Boolean   @default(false)
+  
+  // Soft Delete
+  deletedAt        DateTime? 
+  
+  // Timestamps
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relations (A user can have many projects, tasks, etc.)
+  ownedProjects    Project[]       @relation("ProjectOwner")
+  memberships      ProjectMember[]
+  createdTasks     Task[]          @relation("TaskCreator")
+  assignedTasks    TaskAssignee[]
+}
+
+model Project {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  
+  // Foreign Key linking to the User model
+  ownerId     String
+  owner       User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  members     ProjectMember[]
+  tasks       Task[]
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid())
+  role      Role     @default(MEMBER)
+  
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // A user can only have one specific role per project
+  @@unique([projectId, userId])
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  status      String    @default("TODO") // TODO, IN_PROGRESS, REVIEW, DONE
+  priority    String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  dueDate     DateTime?
+  position    Float     // Used for Drag & Drop ordering
+  
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  creatorId   String
+  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  assignees   TaskAssignee[]
+  subtasks    Subtask[]
+}
+
+// Join table for Many-to-Many relationship (Tasks can have many users, Users can have many tasks)
+model TaskAssignee {
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+}
+
+model Subtask {
+  id        String   @id @default(uuid())
+  title     String
+  completed Boolean  @default(false)
+  position  Float
+  
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
