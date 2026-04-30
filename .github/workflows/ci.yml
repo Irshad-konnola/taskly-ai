@@ -40,6 +40,8 @@ jobs:
         run: pnpm --filter @taskly/shared build
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: "postgresql://fake:fake@localhost:5432/fake"
         run: pnpm --filter api exec prisma generate
 
       # Step F: Check for TypeScript errors in the whole project
